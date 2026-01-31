@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+html {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+@theme inline {
+  --font-urbanist: var(--font-urbanist), sans-serif;
+  --font-water-brush: var(--font-water-brush), cursive;
+  --font-annie: var(--font-annie), cursive;
+
+  /* Colors */
+  --color-background: var(--color-bg-end);
+  --color-foreground: var(--color-text-primary);
+
+  --color-purple-deep: var(--color-bg-start);
+  --color-magenta-accent: var(--color-accent-pink);
+  --color-magenta-glow: var(--color-accent-glow);
+  --color-muted-gray: var(--color-text-secondary);
+
+  --color-bg-start: #1a0b2e;
+  --color-bg-mid: #2d002d;
+  --color-bg-end: #050505;
+
+  --color-accent-pink: #b23092;
+  --color-accent-glow: #e879f9;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 10px var(--color-accent-pink), 0 0 20px var(--color-accent-pink);
+  }
+
+  .text-shadow-glow-orange {
+    text-shadow: 0 0 10px #f97316, 0 0 20px #f97316;
+  }
+
+  .text-shadow-glow-cyan {
+    text-shadow: 0 0 10px #22D3EE, 0 0 20px #22D3EE;
+  }
+
+  .text-shadow-glow-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4);
+  }
+
+  .box-shadow-glow {
+    box-shadow: 0 0 15px rgba(217, 70, 239, 0.3);
+  }
+}
+
+body {
+  background: linear-gradient(to bottom, var(--color-bg-start), var(--color-bg-mid), var(--color-bg-end));
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+@keyframes glow-loop {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(178, 48, 146, 0.6));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 30px rgba(232, 121, 249, 1));
+    /* Lighter pink for stronger glow */
+  }
+}
+
+.animate-glow-loop {
+  animation: glow-loop 3s infinite ease-in-out;
+}
