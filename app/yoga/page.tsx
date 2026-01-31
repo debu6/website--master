@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import SectionWrapper from '@/app/components/ui/SectionWrapper';
 import { RevealWrapper } from '@/app/components/ui/RevealWrapper';
 import Navbar from '@/app/components/layout/Navbar';
 import Footer from '@/app/components/layout/Footer';
+import { AuthModal } from '@/app/components/modals/AuthModal';
+import { ProgramDetailsModal } from '@/app/components/modals/ProgramDetailsModal';
+import { BookingModal } from '@/app/components/modals/BookingModal';
+import { useAuth } from '@/app/hooks/useAuth';
+import { getAuthToken } from '@/app/utils/cookies';
 import { Medal, MapPin, Heart, Star, Calendar, Clock, ChevronRight, CheckCircle, Smartphone, X, User, Users, BookOpen } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -74,8 +79,12 @@ const programsData: ProgramDetails[] = [
 ];
 
 const YogaPage = () => {
+    const { isAuth, user, isLoading } = useAuth();
     const [selectedProgram, setSelectedProgram] = useState<ProgramDetails | null>(null);
     const [bookingProgram, setBookingProgram] = useState<ProgramDetails | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
     const [bookingFormData, setBookingFormData] = useState({
         fullName: '',
         email: '',
@@ -83,12 +92,108 @@ const YogaPage = () => {
         date: '',
         sessionType: 'Yoga Therapy Session'
     });
+    const [authFormData, setAuthFormData] = useState({
+        // Login fields
+        loginEmail: '',
+        loginPassword: '',
+        // Register fields
+        registerName: '',
+        registerCountry: '',
+        registerAddress: '',
+        registerPhone: '',
+        registerEmail: '',
+        registerPassword: '',
+        registerConfirmPassword: ''
+    });
+
+    // Check authentication status using cookie verification
+    React.useEffect(() => {
+        const verifyAuth = () => {
+            const token = getAuthToken();
+            setIsAuthenticated(!!token);
+        };
+        
+        verifyAuth();
+    }, [isAuth]);
 
     const handleBookingInputChange = (field: string, value: string) => {
         setBookingFormData(prev => ({
             ...prev,
             [field]: value
         }));
+    };
+
+    const handleAuthInputChange = (field: string, value: string) => {
+        setAuthFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleEnrollClick = (program: ProgramDetails) => {
+        if (isAuthenticated) {
+            setBookingProgram(program);
+        } else {
+            setBookingProgram(program);
+            setShowAuthModal(true);
+            setAuthMode('login');
+        }
+    };
+
+    const handleAuthSubmit = () => {
+        if (authMode === 'login') {
+            // Login validation
+            if (authFormData.loginEmail && authFormData.loginPassword) {
+                setIsAuthenticated(true);
+                setShowAuthModal(false);
+                // Reset form
+                setAuthFormData({
+                    loginEmail: '',
+                    loginPassword: '',
+                    registerName: '',
+                    registerCountry: '',
+                    registerAddress: '',
+                    registerPhone: '',
+                    registerEmail: '',
+                    registerPassword: '',
+                    registerConfirmPassword: ''
+                });
+            } else {
+                alert('Please fill in all fields');
+            }
+        } else {
+            // Register validation
+            if (
+                authFormData.registerName &&
+                authFormData.registerCountry &&
+                authFormData.registerAddress &&
+                authFormData.registerPhone &&
+                authFormData.registerEmail &&
+                authFormData.registerPassword &&
+                authFormData.registerConfirmPassword
+            ) {
+                if (authFormData.registerPassword !== authFormData.registerConfirmPassword) {
+                    alert('Passwords do not match');
+                    return;
+                }
+                setIsAuthenticated(true);
+                setShowAuthModal(false);
+                // Reset form
+                setAuthFormData({
+                    loginEmail: '',
+                    loginPassword: '',
+                    registerName: '',
+                    registerCountry: '',
+                    registerAddress: '',
+                    registerPhone: '',
+                    registerEmail: '',
+                    registerPassword: '',
+                    registerConfirmPassword: ''
+                });
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
     };
 
     return (
@@ -289,7 +394,7 @@ const YogaPage = () => {
                                                 View Details
                                             </button>
                                             <button 
-                                                onClick={() => setBookingProgram(prog)}
+                                                onClick={() => handleEnrollClick(prog)}
                                                 className="flex-1 py-3 bg-magenta-accent rounded-xl text-white font-urbanist font-bold text-sm uppercase tracking-wide hover:brightness-110 shadow-[0_0_15px_rgba(178,48,146,0.3)] transition-all">
                                                 Enroll Now
                                             </button>
@@ -302,207 +407,34 @@ const YogaPage = () => {
                 </div>
             </section>
 
+            {/* Authentication Modal */}
+            <AuthModal
+                showAuthModal={showAuthModal}
+                authMode={authMode}
+                authFormData={authFormData}
+                onClose={() => setShowAuthModal(false)}
+                onModeChange={setAuthMode}
+                onInputChange={handleAuthInputChange}
+                onSubmit={handleAuthSubmit}
+            />
+
             {/* Program Details Modal */}
-            <AnimatePresence>
-                {selectedProgram && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto"
-                        onClick={() => setSelectedProgram(null)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-[#050505] border border-white/10 rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative shadow-2xl"
-                        >
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setSelectedProgram(null)}
-                                className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-10"
-                            >
-                                <X size={24} />
-                            </button>
-
-                            <div className="p-6 md:p-10">
-                                <h2 className="text-2xl md:text-4xl font-urbanist font-bold text-white mb-8 pr-8 font-water-brush-alt">
-                                    {selectedProgram.title}
-                                </h2>
-
-                                <div className="grid lg:grid-cols-2 gap-10">
-                                    {/* Left Column: Details */}
-                                    <div className="space-y-8">
-
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-urbanist font-bold text-white mb-4">Program Details</h3>
-
-                                            <div className="space-y-3 text-gray-300 font-urbanist text-sm">
-                                                <div className="flex items-start gap-3">
-                                                    <BookOpen size={18} className="text-magenta-accent mt-0.5 shrink-0" />
-                                                    <span>{selectedProgram.subtitle}</span>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <Calendar size={18} className="text-magenta-accent mt-0.5 shrink-0" />
-                                                    <span>{selectedProgram.date}</span>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <Clock size={18} className="text-magenta-accent mt-0.5 shrink-0" />
-                                                    <span>{selectedProgram.schedule}</span>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <Users size={18} className="text-magenta-accent mt-0.5 shrink-0" />
-                                                    <span>{selectedProgram.spots} spots available (out of {selectedProgram.totalCapacity})</span>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <User size={18} className="text-magenta-accent mt-0.5 shrink-0" />
-                                                    <span>Instructor: {selectedProgram.instructor}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-urbanist font-bold text-white mb-3">Description</h3>
-                                            <p className="text-gray-400 font-urbanist text-sm leading-relaxed">
-                                                {selectedProgram.description}
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-urbanist font-bold text-white mb-3">Prerequisites</h3>
-                                            <ul className="space-y-2">
-                                                {selectedProgram.prerequisites.map((item, idx) => (
-                                                    <li key={idx} className="flex items-center gap-2 text-gray-400 font-urbanist text-sm">
-                                                        <CheckCircle size={16} className="text-magenta-accent shrink-0" />
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-
-                                    </div>
-
-                                    {/* Right Column: Pricing & Bio */}
-                                    <div className="space-y-8">
-
-                                        {/* Pricing Card */}
-                                        <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
-                                            <div className="mb-6">
-                                                <p className="text-3xl font-bold text-magenta-accent font-urbanist mb-1">{selectedProgram.price}</p>
-                                                <p className="text-gray-400 text-sm font-urbanist">{selectedProgram.duration}</p>
-                                            </div>
-
-                                            <div className="flex justify-between items-center mb-2 text-sm font-urbanist text-gray-300">
-                                                <span>Available spots:</span>
-                                                <span className="font-bold text-white">{selectedProgram.spots}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center mb-6 text-sm font-urbanist text-gray-300">
-                                                <span>Total capacity:</span>
-                                                <span className="font-bold text-white">{selectedProgram.totalCapacity}</span>
-                                            </div>
-
-                                            <button 
-                                                onClick={() => {
-                                                    setSelectedProgram(null);
-                                                    setBookingProgram(selectedProgram);
-                                                }}
-                                                className="w-full py-3 bg-magenta-accent text-white font-bold font-urbanist rounded-lg hover:brightness-110 shadow-[0_0_15px_rgba(178,48,146,0.3)] transition-all">
-                                                Book This Program
-                                            </button>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-lg font-urbanist font-bold text-white mb-3 font-water-brush-alt">About Your Instructor</h3>
-                                            <p className="text-gray-400 font-urbanist text-sm leading-relaxed">
-                                                {selectedProgram.instructorBio}
-                                            </p>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <ProgramDetailsModal
+                selectedProgram={selectedProgram}
+                onClose={() => setSelectedProgram(null)}
+                onBookClick={() => {
+                    if (selectedProgram) {
+                        setSelectedProgram(null);
+                        handleEnrollClick(selectedProgram);
+                    }
+                }}
+            />
 
             {/* Booking Modal */}
-            <AnimatePresence>
-                {bookingProgram && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto"
-                        onClick={() => setBookingProgram(null)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-[#050505] border border-white/10 rounded-3xl w-full max-w-2xl relative shadow-2xl"
-                        >
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setBookingProgram(null)}
-                                className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-10"
-                            >
-                                <X size={24} />
-                            </button>
-
-                            <div className="p-6 md:p-10">
-                                <h3 className="text-3xl font-urbanist font-bold text-white mb-2">
-                                    Book Your Session
-                                </h3>
-                                <p className="text-gray-400 text-sm font-urbanist mb-8">
-                                    For any queries feel free to reach out to us directly.
-                                </p>
-
-                                <form className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-urbanist font-bold uppercase tracking-widest text-gray-500">
-                                            Full Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            placeholder="John Doe"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-urbanist focus:outline-none focus:border-magenta-accent/50 transition-colors"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-urbanist font-bold uppercase tracking-widest text-gray-500">
-                                            Select Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-urbanist focus:outline-none focus:border-magenta-accent/50 transition-colors bg-none"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-urbanist font-bold uppercase tracking-widest text-gray-500">
-                                            Session Type
-                                        </label>
-                                        <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-urbanist focus:outline-none focus:border-magenta-accent/50 transition-colors appearance-none">
-                                            <option className="bg-black">Yoga Therapy Session</option>
-                                            <option className="bg-black">Private Meditation</option>
-                                            <option className="bg-black">Consultation</option>
-                                        </select>
-                                    </div>
-
-                                    <button type="button" className={`w-full ${BUTTON_PRIMARY} mt-4`}>
-                                        Book Your Session
-                                    </button>
-                                </form>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <BookingModal
+                isOpen={bookingProgram !== null && isAuthenticated}
+                onClose={() => setBookingProgram(null)}
+            />
 
 
 
