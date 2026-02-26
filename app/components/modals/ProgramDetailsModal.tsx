@@ -122,7 +122,7 @@ export const ProgramDetailsModal: React.FC<ProgramDetailsModalProps> = ({
                                     {/* Pricing Card */}
                                     <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
                                         <div className="mb-6">
-                                            <p className="text-3xl font-bold text-magenta-accent font-urbanist mb-1">{selectedProgram.price}</p>
+                                            {/* <p className="text-3xl font-bold text-magenta-accent font-urbanist mb-1">{selectedProgram.price}</p> */}
                                             <p className="text-gray-400 text-sm font-urbanist">{selectedProgram.duration}</p>
                                         </div>
 

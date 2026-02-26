@@ -21,6 +21,15 @@ interface Booking {
   createdAt: string;
 }
 
+interface PricingEntry {
+  _id?: string;
+  category: string;
+  days: number;
+  price: number;
+}
+
+type AdminTab = 'bookings' | 'pricing';
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
@@ -30,6 +39,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<AdminTab>("bookings");
+
+  // Pricing state
+  const CATEGORIES = ["single", "double", "dormitory"] as const;
+  const DURATIONS = [7, 15] as const;
+  const [pricingData, setPricingData] = useState<PricingEntry[]>([]);
+  const [pricingDraft, setPricingDraft] = useState<Record<string, Record<number, number>>>({});
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingSaving, setPricingSaving] = useState(false);
+  const [pricingError, setPricingError] = useState("");
+  const [pricingSuccess, setPricingSuccess] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +88,82 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchPricing = useCallback(async () => {
+    setPricingLoading(true);
+    setPricingError("");
+    try {
+      const res = await fetch("http://localhost:5000/api/pricing");
+      const data = await res.json();
+      if (data.success) {
+        setPricingData(data.pricing);
+        // Build draft from matrix
+        const draft: Record<string, Record<number, number>> = {};
+        CATEGORIES.forEach((cat) => {
+          draft[cat] = {};
+          DURATIONS.forEach((d) => {
+            draft[cat][d] = data.matrix?.[cat]?.[d] ?? 0;
+          });
+        });
+        setPricingDraft(draft);
+      } else {
+        setPricingError(data.message || "Failed to fetch pricing");
+      }
+    } catch {
+      setPricingError("Unable to connect to server.");
+    } finally {
+      setPricingLoading(false);
+    }
+  }, []);
+
+  const handleSavePricing = async () => {
+    setPricingSaving(true);
+    setPricingError("");
+    setPricingSuccess("");
+    try {
+      const entries: { category: string; days: number; price: number }[] = [];
+      CATEGORIES.forEach((cat) => {
+        DURATIONS.forEach((d) => {
+          entries.push({ category: cat, days: d, price: pricingDraft[cat]?.[d] ?? 0 });
+        });
+      });
+
+      const res = await fetch("http://localhost:5000/api/pricing/bulk", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPricingSuccess("Pricing updated successfully!");
+        fetchPricing();
+        setTimeout(() => setPricingSuccess(""), 3000);
+      } else {
+        setPricingError(data.message || "Failed to save pricing");
+      }
+    } catch {
+      setPricingError("Unable to connect to server.");
+    } finally {
+      setPricingSaving(false);
+    }
+  };
+
+  const handleSeedPricing = async () => {
+    try {
+      await fetch("http://localhost:5000/api/pricing/seed", { method: "POST" });
+      fetchPricing();
+    } catch {
+      setPricingError("Failed to seed default pricing.");
+    }
+  };
+
+  const updatePriceDraft = (category: string, days: number, value: string) => {
+    const numVal = parseInt(value, 10) || 0;
+    setPricingDraft((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], [days]: numVal },
+    }));
+  };
+
   useEffect(() => {
     // Restore session on mount
     if (sessionStorage.getItem("adminAuth") === "true") {
@@ -78,8 +174,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchBookings();
+      fetchPricing();
     }
-  }, [isAuthenticated, fetchBookings]);
+  }, [isAuthenticated, fetchBookings, fetchPricing]);
 
   const filteredBookings = bookings.filter(
     (b) =>
@@ -161,16 +258,42 @@ export default function AdminPage() {
             <h1 className="text-xl font-bold">Admin Dashboard</h1>
             <p className="text-gray-400 text-xs">Kshetra Retreat Resort</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 transition"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+              <button
+                onClick={() => setActiveTab("bookings")}
+                className={`px-4 py-2 text-sm font-medium transition ${
+                  activeTab === "bookings"
+                    ? "bg-pink-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                Bookings
+              </button>
+              <button
+                onClick={() => setActiveTab("pricing")}
+                className={`px-4 py-2 text-sm font-medium transition ${
+                  activeTab === "pricing"
+                    ? "bg-pink-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                Pricing
+              </button>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {activeTab === "bookings" && (
+          <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
@@ -304,6 +427,92 @@ export default function AdminPage() {
           <p className="text-gray-500 text-xs mt-3">
             Showing {filteredBookings.length} of {bookings.length} bookings
           </p>
+        )}
+          </>
+        )}
+
+        {activeTab === "pricing" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Pricing Management</h2>
+                <p className="text-gray-400 text-sm mt-1">Set prices for each room category and duration</p>
+              </div>
+              {/* <button
+                onClick={handleSeedPricing}
+                className="px-4 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 transition text-gray-300"
+                title="Seed default pricing if database is empty"
+              >
+                Seed Defaults
+              </button> */}
+            </div>
+
+            {pricingError && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
+                {pricingError}
+              </div>
+            )}
+
+            {pricingSuccess && (
+              <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3 mb-6">
+                {pricingSuccess}
+              </div>
+            )}
+
+            {pricingLoading ? (
+              <div className="text-center py-12 text-gray-400">Loading pricing...</div>
+            ) : (
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/5">
+                      <th className="text-left px-6 py-4 font-semibold text-gray-300">Room Category</th>
+                      {DURATIONS.map((d) => (
+                        <th key={d} className="text-left px-6 py-4 font-semibold text-gray-300">
+                          {d} Days (₹)
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CATEGORIES.map((cat) => (
+                      <tr key={cat} className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="px-6 py-4">
+                          <span className="capitalize px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium">
+                            {cat}
+                          </span>
+                        </td>
+                        {DURATIONS.map((d) => (
+                          <td key={d} className="px-6 py-4">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={pricingDraft[cat]?.[d] ?? ""}
+                                onChange={(e) => updatePriceDraft(cat, d, e.target.value)}
+                                className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition font-mono"
+                              />
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+                  <button
+                    onClick={handleSavePricing}
+                    disabled={pricingSaving}
+                    className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold hover:from-pink-500 hover:to-purple-500 transition-all duration-200 shadow-lg shadow-pink-500/25 disabled:opacity-50"
+                  >
+                    {pricingSaving ? "Saving..." : "Save All Prices"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>

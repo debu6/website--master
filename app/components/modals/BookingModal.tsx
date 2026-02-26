@@ -12,13 +12,6 @@ interface BookingModalProps {
 
 const BUTTON_PRIMARY = "px-8 py-3 bg-magenta-accent text-white font-bold font-urbanist rounded-xl shadow-[0_0_20px_var(--color-accent-pink)] hover:bg-white hover:text-magenta-accent transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed";
 
-// Pricing matrix: category + days -> price in INR
-const PRICING_MATRIX: Record<string, Record<number, number>> = {
-    'single': { 7: 35500, 15: 69000 },
-    'double': { 7: 45500, 15: 79500 },
-    'dormitory': { 7: 19250, 15: 41250 },
-};
-
 export const BookingModal: React.FC<BookingModalProps> = ({
     isOpen,
     onClose
@@ -36,6 +29,28 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+    const [pricingMatrix, setPricingMatrix] = useState<Record<string, Record<number, number>>>({});
+    const [pricingLoaded, setPricingLoaded] = useState(false);
+
+    // Fetch pricing matrix from backend
+    useEffect(() => {
+        if (isOpen && !pricingLoaded) {
+            const fetchPricing = async () => {
+                try {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing`);
+                    const data = await res.json();
+                    if (data.success && data.matrix) {
+                        setPricingMatrix(data.matrix);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch pricing:', err);
+                } finally {
+                    setPricingLoaded(true);
+                }
+            };
+            fetchPricing();
+        }
+    }, [isOpen, pricingLoaded]);
 
     // Prefill name and email from auth context
     useEffect(() => {
@@ -57,9 +72,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             setEndDate(end.toISOString().split('T')[0]);
         }
 
-        const calculatedPrice = PRICING_MATRIX[formData.category]?.[formData.days] || 0;
+        const calculatedPrice = pricingMatrix[formData.category]?.[formData.days] || 0;
         setPrice(calculatedPrice);
-    }, [formData.startDate, formData.days, formData.category]);
+    }, [formData.startDate, formData.days, formData.category, pricingMatrix]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
