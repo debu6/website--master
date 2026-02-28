@@ -39,4 +39,10 @@ export const authAPI = {
 
   // Get profile
   getProfile: () => apiClient.get('/auth/profile'),
+
+  // Get user's yoga booking history
+  getYogaBookings: () => apiClient.get('/bookings/history'),
+
+  // Get user's vehicle booking history
+  getVehicleBookings: () => apiClient.get('/vehicle-bookings/history'),
 };

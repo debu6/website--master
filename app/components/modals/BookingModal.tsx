@@ -145,6 +145,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                 paymentId: response.razorpay_payment_id,
                                 signature: response.razorpay_signature,
                                 bookingData: {
+                                    userId: user?.id,
                                     name: formData.name,
                                     email: formData.email,
                                     category: formData.category,

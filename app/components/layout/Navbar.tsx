@@ -4,12 +4,30 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/app/hooks/useAuth';
+import { AuthModal } from '../modals/AuthModal';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [hidden, setHidden] = useState(false);
     const pathname = usePathname();
+    const { isAuth, user, isLoading } = useAuth();
+
+    // Auth modal state
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    const [authFormData, setAuthFormData] = useState({
+        loginEmail: '',
+        loginPassword: '',
+        registerName: '',
+        registerCountry: '',
+        registerAddress: '',
+        registerPhone: '',
+        registerEmail: '',
+        registerPassword: '',
+        registerConfirmPassword: '',
+    });
 
     // Scroll handling for hide/show and transparency
     useEffect(() => {
@@ -62,6 +80,34 @@ const Navbar = () => {
         return `/${item.toLowerCase().replace(/\s+/g, '-')}`;
     };
 
+    const handleAuthInputChange = (field: string, value: string) => {
+        setAuthFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAuthSubmit = () => {
+        setShowAuthModal(false);
+        // Reset form
+        setAuthFormData({
+            loginEmail: '',
+            loginPassword: '',
+            registerName: '',
+            registerCountry: '',
+            registerAddress: '',
+            registerPhone: '',
+            registerEmail: '',
+            registerPassword: '',
+            registerConfirmPassword: '',
+        });
+        // Refresh page to update auth state
+        window.location.reload();
+    };
+
+    const openLoginModal = () => {
+        setAuthMode('login');
+        setShowAuthModal(true);
+        if (isOpen) toggleMenu();
+    };
+
     return (
         <>
             <nav
@@ -104,9 +150,9 @@ const Navbar = () => {
                         })}
                     </div>
 
-                    {/* Right Side - Pinkrooms Branding */}
-                    <div className="hidden xl:flex items-center gap-2 group cursor-pointer z-50">
-                        <Link href="/pinkrooms" className="relative w-56 h-auto block">
+                    {/* Right Side - Pinkrooms Branding + Login/Profile */}
+                    <div className="hidden xl:flex items-center gap-4 z-50">
+                        <Link href="/pinkrooms" className="relative w-56 h-auto block group">
                             <Image
                                 src="/images/Logos/pinkroom.png"
                                 alt="Pinkrooms Logo"
@@ -115,6 +161,31 @@ const Navbar = () => {
                                 className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 animate-glow-loop"
                             />
                         </Link>
+                        
+                        {/* Login/Profile Button */}
+                        {!isLoading && (
+                            isAuth ? (
+                                <Link
+                                    href="/profile"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition"
+                                >
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                    <span className="max-w-[100px] truncate">{user?.name?.split(' ')[0] || 'Profile'}</span>
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={openLoginModal}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-medium hover:opacity-90 transition shadow-lg shadow-pink-500/20"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    Login
+                                </button>
+                            )
+                        )}
                     </div>
 
                     {/* Mobile Menu Toggle (Modern Hamburger) */}
@@ -167,6 +238,34 @@ const Navbar = () => {
                         Book Now
                     </a>
 
+                    {/* Mobile Login/Profile Button */}
+                    {!isLoading && (
+                        isAuth ? (
+                            <Link
+                                href="/profile"
+                                onClick={toggleMenu}
+                                className={`mt-6 flex items-center gap-3 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium transition-all duration-500 transform ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+                                style={{ transitionDelay: '700ms' }}
+                            >
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </div>
+                                <span>My Profile</span>
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={openLoginModal}
+                                className={`mt-6 flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium transition-all duration-500 transform ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+                                style={{ transitionDelay: '700ms' }}
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Login / Register
+                            </button>
+                        )
+                    )}
+
                     {/* Mobile Pinkrooms Logo */}
                     <Link
                         href="#"
@@ -186,6 +285,17 @@ const Navbar = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Auth Modal */}
+            <AuthModal
+                showAuthModal={showAuthModal}
+                authMode={authMode}
+                authFormData={authFormData}
+                onClose={() => setShowAuthModal(false)}
+                onModeChange={setAuthMode}
+                onInputChange={handleAuthInputChange}
+                onSubmit={handleAuthSubmit}
+            />
         </>
     );
 };

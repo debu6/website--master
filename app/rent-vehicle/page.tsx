@@ -12,12 +12,14 @@ import {
     openVehiclePayment,
     Vehicle 
 } from "../services/vehicleAPI";
+import { useAuth } from "../hooks/useAuth";
 
 export default function RentVehiclePage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+    const { user } = useAuth();
 
     useEffect(() => {
         loadVehicles();
@@ -163,7 +165,7 @@ export default function RentVehiclePage() {
             {/* --- Vehicle Detail Modal --- */}
             <AnimatePresence>
                 {selectedVehicle && (
-                    <VehicleModal vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} />
+                    <VehicleModal vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} userId={user?.id} />
                 )}
             </AnimatePresence>
         </main>
@@ -171,7 +173,7 @@ export default function RentVehiclePage() {
 }
 
 // Modal Component
-function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void }) {
+function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose: () => void; userId?: string }) {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [customerName, setCustomerName] = useState('');
@@ -248,6 +250,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpaySignature: response.razorpay_signature,
                             bookingData: {
+                                userId: userId,
                                 vehicleId: vehicle._id,
                                 customerName: customerName.trim(),
                                 customerEmail: customerEmail.trim(),
