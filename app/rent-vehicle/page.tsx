@@ -1,104 +1,40 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Car, Bike, Info, Calendar, Shield, CreditCard, X, ChevronLeft, ChevronRight, Fuel, Gauge, Users, Settings, MapPin, Phone, Mail } from "lucide-react";
-
-// Types
-type Vehicle = {
-    id: string;
-    name: string;
-    subtitle: string;
-    type: 'scooter' | 'bike' | 'car';
-    price: number; // per day
-    image: string;
-    thumbnails: string[];
-    desc: string;
-    specs: {
-        passengers: number;
-        fuel: string;
-        transmission: string;
-        location: string;
-        mileage: string;
-        engine: string;
-    };
-    features: string[];
-    deposit: number;
-};
-
-// Data
-const vehicles: Vehicle[] = [
-    {
-        id: 'honda-activa',
-        name: "Honda Activa 6G",
-        subtitle: "Honda Activa 6G (2023)",
-        type: 'scooter',
-        price: 500,
-        image: "/images/rent/activa_6g.png",
-        thumbnails: ["/images/rent/activa_6g.png"],
-        desc: "The most reliable scooter for city commutes and short trips around Varkala.",
-        specs: { passengers: 2, fuel: "Petrol", transmission: "Automatic", location: "Kshetra Retreat", mileage: "45 kmpl", engine: "110cc" },
-        features: ["Easy to ride", "Storage space", "reliable", "Lightweight"],
-        deposit: 2000
-    },
-    {
-        id: 'access-125',
-        name: "Access 125",
-        subtitle: "Suzuki Access 125 (2023)",
-        type: 'scooter',
-        price: 800,
-        image: "/images/rent/access_125.png",
-        thumbnails: ["/images/rent/access_125.png"],
-        desc: "A powerful and comfortable scooter perfect for slightly longer rides with a pillion.",
-        specs: { passengers: 2, fuel: "Petrol", transmission: "Automatic", location: "Kshetra Retreat", mileage: "40 kmpl", engine: "125cc" },
-        features: ["Comfortable seating", "Good suspension", "Digital meter", "LED lights"],
-        deposit: 2000
-    },
-    {
-        id: 'royal-enfield',
-        name: "Royal Enfield Classic 350",
-        subtitle: "Royal Enfield Classic 350 (2023)",
-        type: 'bike',
-        price: 1200,
-        image: "/images/rent/classic_350.png",
-        thumbnails: ["/images/rent/classic_350.png"],
-        desc: "Experience the thrill of riding a classic motorcycle through Kerala's scenic routes.",
-        specs: { passengers: 2, fuel: "Petrol", transmission: "Manual", location: "Kshetra Retreat Resort", mileage: "35 kmpl", engine: "349cc" },
-        features: ["Powerful engine", "Comfortable for long rides", "Classic styling", "Good ground clearance", "Reliable performance"],
-        deposit: 5000
-    },
-    {
-        id: 'swift',
-        name: "Maruti Suzuki Swift",
-        subtitle: "Maruti Suzuki Swift (2022)",
-        type: 'car',
-        price: 2000,
-        image: "/images/rent/swift.png",
-        thumbnails: ["/images/rent/swift.png"],
-        desc: "A sporty hatchback that makes navigating Kerala's roads fun and easy.",
-        specs: { passengers: 5, fuel: "Petrol/Diesel", transmission: "Manual/Auto", location: "Kshetra Retreat", mileage: "22 kmpl", engine: "1197cc" },
-        features: ["AC", "Music System", "Power Windows", "Airbags"],
-        deposit: 10000
-    },
-    {
-        id: 'innova',
-        name: "Toyota Innova Crysta",
-        subtitle: "Toyota Innova Crysta (2022)",
-        type: 'car',
-        price: 3500,
-        image: "/images/rent/innova.png",
-        thumbnails: ["/images/rent/innova.png"],
-        desc: "The ultimate family car for comfortable long-distance travel across Kerala.",
-        specs: { passengers: 7, fuel: "Diesel", transmission: "Manual", location: "Kshetra Retreat", mileage: "14 kmpl", engine: "2393cc" },
-        features: ["Captain Seats", "Dual AC", "Spacious Boot", "Premium Interiors"],
-        deposit: 15000
-    }
-];
+import { Car, X, ChevronRight, Fuel, Phone, Mail, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { 
+    fetchVehicles, 
+    createVehicleBookingOrder, 
+    verifyVehicleBookingPayment, 
+    openVehiclePayment,
+    Vehicle 
+} from "../services/vehicleAPI";
 
 export default function RentVehiclePage() {
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+
+    useEffect(() => {
+        loadVehicles();
+    }, []);
+
+    const loadVehicles = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await fetchVehicles();
+            setVehicles(data);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load vehicles');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-magenta-accent font-urbanist">
@@ -159,34 +95,52 @@ export default function RentVehiclePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {vehicles.map((vehicle) => (
-                            <motion.div
-                                key={vehicle.id}
-                                whileHover={{ y: -10 }}
-                                className="bg-[#111] rounded-3xl overflow-hidden border border-white/10 group cursor-pointer"
-                                onClick={() => setSelectedVehicle(vehicle)}
-                            >
-                                <div className="relative h-64 overflow-hidden">
-                                    <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                        style={{ backgroundImage: `url(${vehicle.image})` }}>
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
-                                    <div className="absolute bottom-4 left-4 z-10">
-                                        <h4 className="text-xl font-bold text-white">{vehicle.name}</h4>
-                                        <div className="flex items-baseline gap-1 mt-1">
-                                            <span className="text-magenta-accent font-bold text-lg">₹{vehicle.price}</span>
-                                            <span className="text-gray-400 text-xs">/day</span>
+                        {loading ? (
+                            <div className="col-span-full flex justify-center items-center py-20">
+                                <Loader2 className="w-8 h-8 animate-spin text-magenta-accent" />
+                            </div>
+                        ) : error ? (
+                            <div className="col-span-full flex flex-col items-center py-20 text-center">
+                                <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                                <p className="text-gray-400">{error}</p>
+                                <button onClick={loadVehicles} className="mt-4 px-6 py-2 bg-magenta-accent rounded-lg text-white">
+                                    Retry
+                                </button>
+                            </div>
+                        ) : vehicles.length === 0 ? (
+                            <div className="col-span-full text-center py-20 text-gray-400">
+                                No vehicles available at the moment.
+                            </div>
+                        ) : (
+                            vehicles.map((vehicle) => (
+                                <motion.div
+                                    key={vehicle._id}
+                                    whileHover={{ y: -10 }}
+                                    className="bg-[#111] rounded-3xl overflow-hidden border border-white/10 group cursor-pointer"
+                                    onClick={() => setSelectedVehicle(vehicle)}
+                                >
+                                    <div className="relative h-64 overflow-hidden">
+                                        <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                                            style={{ backgroundImage: `url(${vehicle.image})` }}>
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
+                                        <div className="absolute bottom-4 left-4 z-10">
+                                            <h4 className="text-xl font-bold text-white">{vehicle.name}</h4>
+                                            <div className="flex items-baseline gap-1 mt-1">
+                                                <span className="text-magenta-accent font-bold text-lg">₹{vehicle.pricePerDay}</span>
+                                                <span className="text-gray-400 text-xs">/day</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="p-4 flex justify-between items-center bg-[#1a1a1a]">
-                                    <span className="text-xs text-gray-400 uppercase tracking-wider">{vehicle.type}</span>
-                                    <button className="px-4 py-2 rounded-full bg-white/10 text-xs font-bold hover:bg-magenta-accent transition-colors">
-                                        View Details
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
+                                    <div className="p-4 flex justify-between items-center bg-[#1a1a1a]">
+                                        <span className="text-xs text-gray-400 uppercase tracking-wider">{vehicle.type}</span>
+                                        <button className="px-4 py-2 rounded-full bg-white/10 text-xs font-bold hover:bg-magenta-accent transition-colors">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
                     </div>
                 </div>
             </section>
@@ -218,7 +172,144 @@ export default function RentVehiclePage() {
 
 // Modal Component
 function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void }) {
-    const [currentThumb, setCurrentThumb] = useState(0);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [customerName, setCustomerName] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [bookingSuccess, setBookingSuccess] = useState(false);
+    const [bookingError, setBookingError] = useState<string | null>(null);
+
+    // Calculate total days and price
+    const calculateTotalDays = () => {
+        if (!startDate || !endDate) return 0;
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    };
+
+    const totalDays = calculateTotalDays();
+    const totalPrice = totalDays * vehicle.pricePerDay;
+
+    // Handle booking with payment
+    const handleBooking = async () => {
+        // Validation
+        if (!startDate || !endDate) {
+            setBookingError('Please select start and end dates');
+            return;
+        }
+        if (totalDays <= 0) {
+            setBookingError('End date must be after start date');
+            return;
+        }
+        if (!customerName.trim()) {
+            setBookingError('Please enter your name');
+            return;
+        }
+        if (!customerEmail.trim() || !customerEmail.includes('@')) {
+            setBookingError('Please enter a valid email');
+            return;
+        }
+        if (!customerPhone.trim() || customerPhone.length < 10) {
+            setBookingError('Please enter a valid phone number');
+            return;
+        }
+
+        setIsProcessing(true);
+        setBookingError(null);
+
+        try {
+            // Create Razorpay order
+            const orderData = await createVehicleBookingOrder({
+                vehicleId: vehicle._id,
+                totalPrice: totalPrice,
+                customerName: customerName.trim(),
+                customerEmail: customerEmail.trim()
+            });
+
+            // Open payment modal
+            await openVehiclePayment({
+                orderId: orderData.orderId,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                keyId: orderData.keyId,
+                customerName: customerName.trim(),
+                customerEmail: customerEmail.trim(),
+                customerPhone: customerPhone.trim(),
+                vehicleName: vehicle.name,
+                onSuccess: async (response) => {
+                    try {
+                        // Verify payment and create booking
+                        await verifyVehicleBookingPayment({
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpaySignature: response.razorpay_signature,
+                            bookingData: {
+                                vehicleId: vehicle._id,
+                                customerName: customerName.trim(),
+                                customerEmail: customerEmail.trim(),
+                                customerPhone: customerPhone.trim(),
+                                startDate: startDate,
+                                endDate: endDate,
+                                totalDays: totalDays,
+                                totalPrice: totalPrice
+                            }
+                        });
+                        setBookingSuccess(true);
+                        setIsProcessing(false);
+                    } catch (err: any) {
+                        setBookingError(err.message || 'Failed to confirm booking');
+                        setIsProcessing(false);
+                    }
+                },
+                onError: (error) => {
+                    setBookingError(error.message || 'Payment failed');
+                    setIsProcessing(false);
+                }
+            });
+        } catch (err: any) {
+            setBookingError(err.message || 'Failed to create order');
+            setIsProcessing(false);
+        }
+    };
+
+    // Success screen
+    if (bookingSuccess) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-[#050505] w-full max-w-md p-8 rounded-3xl border border-white/10 text-center"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
+                    <p className="text-gray-400 mb-4">
+                        Your {vehicle.name} has been booked from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}.
+                    </p>
+                    <p className="text-gray-400 mb-6">
+                        A confirmation email has been sent to {customerEmail}.
+                    </p>
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 rounded-xl bg-magenta-accent text-white font-bold hover:bg-white hover:text-magenta-accent transition-colors"
+                    >
+                        Close
+                    </button>
+                </motion.div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -273,7 +364,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
                         <div>
                             <h3 className="text-lg font-bold text-white mb-3">Description</h3>
                             <p className="text-gray-400 text-sm leading-relaxed">
-                                {vehicle.desc}
+                                {vehicle.description}
                             </p>
                         </div>
 
@@ -284,7 +375,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
                                 {Object.entries(vehicle.specs).map(([key, value], idx) => (
                                     <div key={idx} className="bg-white/5 rounded-2xl p-4 border border-white/5">
                                         <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">{key}</div>
-                                        <div className="text-sm text-white font-medium capitalize truncate" title={value as string}>{value}</div>
+                                        <div className="text-sm text-white font-medium capitalize truncate" title={String(value)}>{value}</div>
                                     </div>
                                 ))}
                             </div>
@@ -307,35 +398,94 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
                             <div className="flex justify-between items-center border-b border-white/10 pb-4">
                                 <h3 className="text-lg font-bold text-white">Pricing & Options</h3>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-magenta-accent">₹{vehicle.price}</div>
+                                    <div className="text-2xl font-bold text-magenta-accent">₹{vehicle.pricePerDay}</div>
                                     <div className="text-xs text-gray-400">per day</div>
+                                </div>
+                            </div>
+
+                            {/* Customer Info */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs text-gray-400 mb-2 block">Your Name *</label>
+                                    <input 
+                                        type="text" 
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        placeholder="Enter your full name"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" 
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-2 block">Email *</label>
+                                        <input 
+                                            type="email" 
+                                            value={customerEmail}
+                                            onChange={(e) => setCustomerEmail(e.target.value)}
+                                            placeholder="your@email.com"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-2 block">Phone *</label>
+                                        <input 
+                                            type="tel" 
+                                            value={customerPhone}
+                                            onChange={(e) => setCustomerPhone(e.target.value)}
+                                            placeholder="+91 9876543210"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" 
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-xs text-gray-400 mb-2 block">Start Date</label>
-                                    <div className="relative">
-                                        <input type="date" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" />
-                                    </div>
+                                    <label className="text-xs text-gray-400 mb-2 block">Start Date *</label>
+                                    <input 
+                                        type="date" 
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" 
+                                    />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-400 mb-2 block">End Date</label>
-                                    <div className="relative">
-                                        <input type="date" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" />
-                                    </div>
+                                    <label className="text-xs text-gray-400 mb-2 block">End Date *</label>
+                                    <input 
+                                        type="date" 
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        min={startDate || new Date().toISOString().split('T')[0]}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-magenta-accent outline-none" 
+                                    />
                                 </div>
                             </div>
 
+                            {totalDays > 0 && (
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-400">Duration:</span>
+                                    <span className="text-white font-bold">{totalDays} day{totalDays > 1 ? 's' : ''}</span>
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-400">Security deposit:</span>
+                                <span className="text-gray-400">Security deposit (refundable):</span>
                                 <span className="text-white font-bold">₹{vehicle.deposit.toLocaleString()}</span>
                             </div>
 
                             <div className="pt-4 border-t border-white/10 flex justify-between items-center">
-                                <span className="font-bold text-white">Total per unit:</span>
-                                <span className="text-xl font-bold text-magenta-accent">₹{vehicle.price.toLocaleString()}</span>
+                                <span className="font-bold text-white">Total Price:</span>
+                                <span className="text-xl font-bold text-magenta-accent">
+                                    {totalDays > 0 ? `₹${totalPrice.toLocaleString()}` : '₹0'}
+                                </span>
                             </div>
+
+                            {bookingError && (
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm">
+                                    {bookingError}
+                                </div>
+                            )}
                         </div>
 
                         {/* Terms */}
@@ -343,10 +493,10 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
                             <h3 className="text-lg font-bold text-white mb-3">Terms & Conditions</h3>
                             <ul className="space-y-2">
                                 {[
-                                    "Valid motorcycle license required",
-                                    "Helmet and protective gear mandatory",
-                                    "Experience with manual transmission required",
-                                    "Fuel to be paid by renter"
+                                    "Valid driving license required",
+                                    "Helmet and protective gear mandatory for two-wheelers",
+                                    "Fuel to be paid by renter",
+                                    "Security deposit is fully refundable"
                                 ].map((term, idx) => (
                                     <li key={idx} className="flex gap-3 text-xs text-gray-400">
                                         <span className="text-magenta-accent">•</span>
@@ -373,11 +523,26 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
 
                         {/* Sticky Bottom Actions */}
                         <div className="sticky bottom-0 bg-[#050505] pt-4 pb-2 border-t border-white/10 flex gap-4">
-                            <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-white/20 text-white font-bold hover:bg-white/10 transition-colors">
+                            <button 
+                                onClick={onClose} 
+                                disabled={isProcessing}
+                                className="flex-1 py-3 rounded-xl border border-white/20 text-white font-bold hover:bg-white/10 transition-colors disabled:opacity-50"
+                            >
                                 Close
                             </button>
-                            <button className="flex-[2] py-3 rounded-xl bg-magenta-accent text-white font-bold hover:bg-white hover:text-magenta-accent transition-colors shadow-[0_0_20px_rgba(178,48,146,0.3)]">
-                                Add to Booking
+                            <button 
+                                onClick={handleBooking}
+                                disabled={isProcessing || totalDays <= 0}
+                                className="flex-[2] py-3 rounded-xl bg-magenta-accent text-white font-bold hover:bg-white hover:text-magenta-accent transition-colors shadow-[0_0_20px_rgba(178,48,146,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    `Book Now${totalDays > 0 ? ` - ₹${totalPrice.toLocaleString()}` : ''}`
+                                )}
                             </button>
                         </div>
                     </div>
