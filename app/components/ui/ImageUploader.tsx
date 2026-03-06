@@ -126,7 +126,7 @@ export default function ImageUploader({
         formData.append("cropData", JSON.stringify(cropData));
       }
 
-      const response = await fetch("http://localhost:5000/api/upload/vehicle-image", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/vehicle-image`, {
         method: "POST",
         body: formData,
       });
@@ -134,7 +134,7 @@ export default function ImageUploader({
       const data = await response.json();
 
       if (data.success) {
-        const fullUrl = `http://localhost:5000${data.data.url}`;
+        const fullUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${data.data.url}`;
         onImageUploaded(fullUrl);
         setShowCropper(false);
         setSelectedFile(null);
