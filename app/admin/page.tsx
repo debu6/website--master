@@ -177,7 +177,7 @@ export default function AdminPage() {
     setLoading(true);
     setFetchError("");
     try {
-      const res = await fetch("http://localhost:5000/api/bookings/all");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/all`);
       const data = await res.json();
       if (data.success) {
         setBookings(data.bookings);
@@ -195,7 +195,7 @@ export default function AdminPage() {
     setPricingLoading(true);
     setPricingError("");
     try {
-      const res = await fetch("http://localhost:5000/api/pricing");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing`);
       const data = await res.json();
       if (data.success) {
         setPricingData(data.pricing);
@@ -230,7 +230,7 @@ export default function AdminPage() {
         });
       });
 
-      const res = await fetch("http://localhost:5000/api/pricing/bulk", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing/bulk`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entries }),
@@ -252,7 +252,7 @@ export default function AdminPage() {
 
   const handleSeedPricing = async () => {
     try {
-      await fetch("http://localhost:5000/api/pricing/seed", { method: "POST" });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing/seed`, { method: "POST" });
       fetchPricing();
     } catch {
       setPricingError("Failed to seed default pricing.");
