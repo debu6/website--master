@@ -35,7 +35,22 @@ interface VehicleBooking {
   createdAt: string;
 }
 
-type BookingTab = "yoga" | "vehicles";
+interface AyurvedaBooking {
+  _id: string;
+  treatmentName: string;
+  treatmentCategory: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  appointmentDate: string;
+  price: number;
+  duration: string;
+  razorpayPaymentId: string;
+  bookingStatus: string;
+  createdAt: string;
+}
+
+type BookingTab = "yoga" | "vehicles" | "ayurveda";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -45,6 +60,8 @@ export default function ProfilePage() {
   const [vehicleBookings, setVehicleBookings] = useState<VehicleBooking[]>([]);
   const [loadingYoga, setLoadingYoga] = useState(false);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [ayurvedaBookings, setAyurvedaBookings] = useState<AyurvedaBooking[]>([]);
+  const [loadingAyurveda, setLoadingAyurveda] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -57,6 +74,7 @@ export default function ProfilePage() {
     if (isAuth) {
       fetchYogaBookings();
       fetchVehicleBookings();
+      fetchAyurvedaBookings();
     }
   }, [isAuth]);
 
@@ -86,6 +104,20 @@ export default function ProfilePage() {
       console.error("Failed to fetch vehicle bookings:", err);
     } finally {
       setLoadingVehicles(false);
+    }
+  };
+
+  const fetchAyurvedaBookings = async () => {
+    setLoadingAyurveda(true);
+    try {
+      const response = await authAPI.getAyurvedaBookings();
+      if (response.data.success) {
+        setAyurvedaBookings(response.data.data || []);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch ayurveda bookings:", err);
+    } finally {
+      setLoadingAyurveda(false);
     }
   };
 
@@ -176,6 +208,21 @@ export default function ProfilePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8m-8 4h4m-4 4h8M4 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
                 </svg>
                 Vehicle Rentals
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("ayurveda")}
+              className={`flex-1 px-6 py-4 text-center font-medium transition ${
+                activeTab === "ayurveda"
+                  ? "bg-emerald-600/20 text-emerald-400 border-b-2 border-emerald-500"
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                Ayurveda Bookings
               </div>
             </button>
           </div>
@@ -272,6 +319,57 @@ export default function ProfilePage() {
                           </div>
                           <div className="text-right">
                             <p className="text-2xl font-bold text-cyan-400">₹{booking.totalPrice.toLocaleString("en-IN")}</p>
+                            <p className="text-gray-500 text-xs mt-1">
+                              Booked on {new Date(booking.createdAt).toLocaleDateString("en-IN")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Ayurveda Bookings */}
+            {activeTab === "ayurveda" && (
+              <div>
+                {loadingAyurveda ? (
+                  <div className="text-center py-12 text-gray-400">Loading ayurveda bookings...</div>
+                ) : ayurvedaBookings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">No ayurveda bookings yet</div>
+                    <Link
+                      href="/ayurveda"
+                      className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium hover:opacity-90 transition"
+                    >
+                      Explore Ayurveda Treatments
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {ayurvedaBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] transition"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="whitespace-nowrap px-3 py-1 rounded-md text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
+                                {booking.treatmentCategory}
+                              </span>
+                              <span className={`capitalize px-3 py-1 rounded-full text-xs border ${getStatusBadge(booking.bookingStatus)}`}>
+                                {booking.bookingStatus}
+                              </span>
+                            </div>
+                            <p className="text-white font-medium">{booking.treatmentName}</p>
+                            <p className="text-gray-400 text-sm mt-1">
+                              Appointment: {new Date(booking.appointmentDate).toLocaleDateString("en-IN", { weekday: "short", year: "numeric", month: "short", day: "numeric" })} &middot; {booking.duration}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-emerald-400">₹{booking.price.toLocaleString("en-IN")}</p>
                             <p className="text-gray-500 text-xs mt-1">
                               Booked on {new Date(booking.createdAt).toLocaleDateString("en-IN")}
                             </p>

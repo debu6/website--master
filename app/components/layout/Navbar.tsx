@@ -68,6 +68,7 @@ const Navbar = () => {
     const navLinks = [
         'Stay',
         'Yoga',
+        'Ayurveda',
         'Airport Transfers',
         'Rent a Vehicle',
         'Adventure Sports',

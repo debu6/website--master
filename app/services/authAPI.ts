@@ -45,4 +45,7 @@ export const authAPI = {
 
   // Get user's vehicle booking history
   getVehicleBookings: () => apiClient.get('/vehicle-bookings/history'),
+
+  // Get user's ayurveda booking history
+  getAyurvedaBookings: () => apiClient.get('/ayurveda-bookings/history'),
 };
