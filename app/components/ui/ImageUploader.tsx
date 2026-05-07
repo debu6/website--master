@@ -134,7 +134,8 @@ export default function ImageUploader({
       const data = await response.json();
 
       if (data.success) {
-        const fullUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${data.data.url}`;
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+        const fullUrl = `${baseUrl}${data.data.url}`;
         onImageUploaded(fullUrl);
         setShowCropper(false);
         setSelectedFile(null);

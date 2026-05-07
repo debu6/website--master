@@ -14,6 +14,14 @@ import {
 } from "../services/vehicleAPI";
 import { useAuth } from "../hooks/useAuth";
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+const getImageUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('undefined/')) return `${API_BASE}/${url.replace('undefined/', '')}`;
+    if (url.startsWith('/')) return `${API_BASE}${url}`;
+    return url;
+};
+
 export default function RentVehiclePage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [loading, setLoading] = useState(true);
@@ -123,7 +131,7 @@ export default function RentVehiclePage() {
                                 >
                                     <div className="relative h-64 overflow-hidden">
                                         <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                            style={{ backgroundImage: `url(${vehicle.image})` }}>
+                                            style={{ backgroundImage: `url(${getImageUrl(vehicle.image)})` }}>
                                         </div>
                                         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
                                         <div className="absolute bottom-4 left-4 z-10">
@@ -341,7 +349,7 @@ function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose:
                 <div className="w-full md:w-1/2 h-[40vh] md:h-full bg-[#050505] relative flex flex-col">
                     <div className="flex-1 relative overflow-hidden group">
                         <div className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-500"
-                            style={{ backgroundImage: `url(${vehicle.image})` }}>
+                            style={{ backgroundImage: `url(${getImageUrl(vehicle.image)})` }}>
                         </div>
                     </div>
                 </div>
