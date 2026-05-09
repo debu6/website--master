@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import { uploadVehicleImage } from "@/app/services/uploadAPI";
 
 interface ImageUploaderProps {
   currentImage?: string;
@@ -108,51 +109,38 @@ export default function ImageUploader({
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("image", selectedFile);
-
-      // Add crop data if we have a completed crop
+      // Prepare crop data if available
+      let cropData;
       if (completedCrop && imgRef.current) {
         // Calculate crop data relative to natural image dimensions
         const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
         const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
 
-        const cropData = {
+        cropData = {
           x: completedCrop.x * scaleX,
           y: completedCrop.y * scaleY,
           width: completedCrop.width * scaleX,
           height: completedCrop.height * scaleY,
         };
-        formData.append("cropData", JSON.stringify(cropData));
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload/vehicle-image`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
-        const fullUrl = `${baseUrl}${data.data.url}`;
-        onImageUploaded(fullUrl);
-        setShowCropper(false);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-        setCrop(undefined);
-        setCompletedCrop(null);
-        
-        // Reset file input
-        if (inputRef.current) {
-          inputRef.current.value = "";
-        }
-      } else {
-        setError(data.message || "Failed to upload image");
+      // Upload using Cloudinary via backend
+      const imageUrl = await uploadVehicleImage(selectedFile, cropData);
+      
+      onImageUploaded(imageUrl);
+      setShowCropper(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setCrop(undefined);
+      setCompletedCrop(null);
+      
+      // Reset file input
+      if (inputRef.current) {
+        inputRef.current.value = "";
       }
     } catch (err) {
       console.error("Upload error:", err);
-      setError("Failed to connect to server. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setUploading(false);
     }
