@@ -157,10 +157,10 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4">
               {/* Avatar */}
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                {user?.name?.charAt(0)?.toUpperCase() || user?.contactPersonName?.charAt(0)?.toUpperCase() || "U"}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">{user?.name || "User"}</h1>
+                <h1 className="text-2xl font-bold text-white">{user?.name || user?.contactPersonName || "User"}</h1>
                 <p className="text-gray-400">{user?.email}</p>
               </div>
             </div>

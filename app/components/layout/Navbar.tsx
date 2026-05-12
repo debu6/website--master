@@ -14,6 +14,8 @@ const Navbar = () => {
     const pathname = usePathname();
     const { isAuth, user, isLoading } = useAuth();
 
+  
+
     // Auth modal state
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -171,9 +173,9 @@ const Navbar = () => {
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition"
                                 >
                                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                        {user?.name?.charAt(0)?.toUpperCase() || user?.contactPersonName?.charAt(0)?.toUpperCase() || 'U'}
                                     </div>
-                                    <span className="max-w-[100px] truncate">{user?.name?.split(' ')[0] || 'Profile'}</span>
+                                    <span className="max-w-[100px] truncate">{user?.name?.split(' ')[0] || user?.contactPersonName?.split(' ')[0] || 'Profile'}</span>
                                 </Link>
                             ) : (
                                 <button

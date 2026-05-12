@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { X, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { authAPI } from '@/app/services/authAPI';
 import { setAuthToken } from '@/app/utils/cookies';
@@ -63,10 +64,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 // Store token in cookie
                 setAuthToken(response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
-                
+
                 // Call parent callback
                 onSubmit();
-                
+
                 // Close modal and reset error
                 handleClose();
             } else {
@@ -74,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }
         } catch (err: any) {
             let errorMessage = 'Login failed';
-            
+
             if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
                 // Handle validation errors array
                 errorMessage = err.response.data.errors.map((e: any) => e.msg).join(', ');
@@ -83,7 +84,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             } else if (err.message) {
                 errorMessage = err.message;
             }
-            
+
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -116,10 +117,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 // Store token in cookie
                 setAuthToken(response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
-                
+
                 // Call parent callback
                 onSubmit();
-                
+
                 // Close modal and reset error
                 handleClose();
             } else {
@@ -127,7 +128,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }
         } catch (err: any) {
             let errorMessage = 'Registration failed';
-            
+
             if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
                 // Handle validation errors array
                 errorMessage = err.response.data.errors.map((e: any) => e.msg).join(', ');
@@ -136,7 +137,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             } else if (err.message) {
                 errorMessage = err.message;
             }
-            
+
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -152,6 +153,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto"
                     onClick={handleClose}
                 >
+
+                    
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -168,6 +171,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </button>
 
                         <div className="p-6 pt-12">
+
+                            {/* Partner Login Link */}
+                            <Link
+                                href="/partner-login"
+                                onClick={handleClose}
+                                className="mb-6 inline-flex items-center gap-2 text-blue-400 hover:text-cyan-300 font-urbanist font-semibold transition-colors duration-300 hover:underline"
+                            >
+                                <span>Partner Login</span>
+                                <ArrowRight size={18} className="transition-transform hover:translate-x-1" />
+                            </Link>
+
                             {/* Error Message */}
                             {error && (
                                 <motion.div
@@ -183,31 +197,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             <div className="flex gap-4 mb-6">
                                 <button
                                     onClick={() => onModeChange('login')}
-                                    className={`flex-1 py-2 font-urbanist font-bold uppercase tracking-wide rounded-lg transition-all ${
-                                        authMode === 'login'
+                                    className={`flex-1 py-2 font-urbanist font-bold uppercase tracking-wide rounded-lg transition-all ${authMode === 'login'
                                             ? 'bg-magenta-accent text-white'
                                             : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     Login
                                 </button>
                                 <button
                                     onClick={() => onModeChange('register')}
-                                    className={`flex-1 py-2 font-urbanist font-bold uppercase tracking-wide rounded-lg transition-all ${
-                                        authMode === 'register'
+                                    className={`flex-1 py-2 font-urbanist font-bold uppercase tracking-wide rounded-lg transition-all ${authMode === 'register'
                                             ? 'bg-magenta-accent text-white'
                                             : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     Register
                                 </button>
                             </div>
 
+                  
+
                             {/* Login Form */}
                             {authMode === 'login' && (
                                 <form className="space-y-3" onSubmit={handleLoginSubmit}>
+
                                     <h3 className="text-xl font-urbanist font-bold text-white mb-4">Sign In</h3>
-                                    
+
                                     <div className="space-y-1">
                                         <label className="text-xs font-urbanist font-bold uppercase tracking-widest text-gray-500">
                                             Email Address
@@ -257,7 +272,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             {authMode === 'register' && (
                                 <form className="space-y-3" onSubmit={handleRegisterSubmit}>
                                     <h3 className="text-xl font-urbanist font-bold text-white mb-4">Create Account</h3>
-                                    
+
                                     <div className="space-y-1">
                                         <label className="text-xs font-urbanist font-bold uppercase tracking-widest text-gray-500">
                                             Full Name
