@@ -16,12 +16,14 @@ export interface Vehicle {
     subtitle: string;
     type: 'scooter' | 'bike' | 'car';
     pricePerDay: number;
+    partnerPricePerDay?: number;
     image: string;
     thumbnails: string[];
     description: string;
     specs: VehicleSpecs;
     features: string[];
     deposit: number;
+    partnerDeposit?: number;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

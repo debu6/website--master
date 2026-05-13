@@ -37,7 +37,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         if (isOpen && !pricingLoaded) {
             const fetchPricing = async () => {
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing`);
+                    // Determine endpoint based on user type
+                    const isPartner = user?.type === 'partner' || user?.userType === 'partner' || user?.role === 'partner';
+                    const endpoint = isPartner ? '/pricing/partner' : '/pricing';
+                    
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`);
                     const data = await res.json();
                     if (data.success && data.matrix) {
                         setPricingMatrix(data.matrix);
@@ -50,7 +54,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             };
             fetchPricing();
         }
-    }, [isOpen, pricingLoaded]);
+    }, [isOpen, pricingLoaded, user]);
 
     // Prefill name and email from auth context
     useEffect(() => {

@@ -63,6 +63,7 @@ const emptyVehicleForm = {
   subtitle: '',
   type: 'scooter' as 'scooter' | 'bike' | 'car',
   pricePerDay: 0,
+  partnerPricePerDay: 0,
   image: '',
   thumbnails: [] as string[],
   description: '',
@@ -76,6 +77,7 @@ const emptyVehicleForm = {
   },
   features: [] as string[],
   deposit: 0,
+  partnerDeposit: 0,
   isActive: true
 };
 
@@ -101,6 +103,14 @@ export default function AdminPage() {
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingError, setPricingError] = useState("");
   const [pricingSuccess, setPricingSuccess] = useState("");
+
+  // Partner Pricing state
+  const [partnerPricingData, setPartnerPricingData] = useState<PricingEntry[]>([]);
+  const [partnerPricingDraft, setPartnerPricingDraft] = useState<Record<string, Record<number, number>>>({});
+  const [partnerPricingLoading, setPartnerPricingLoading] = useState(false);
+  const [partnerPricingSaving, setPartnerPricingSaving] = useState(false);
+  const [partnerPricingError, setPartnerPricingError] = useState("");
+  const [partnerPricingSuccess, setPartnerPricingSuccess] = useState("");
 
   // Vehicles state
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -267,6 +277,74 @@ export default function AdminPage() {
     }));
   };
 
+  // Partner pricing functions
+  const fetchPartnerPricing = useCallback(async () => {
+    setPartnerPricingLoading(true);
+    setPartnerPricingError("");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing/partner`);
+      const data = await res.json();
+      if (data.success) {
+        setPartnerPricingData(data.pricing);
+        // Build draft from matrix
+        const draft: Record<string, Record<number, number>> = {};
+        CATEGORIES.forEach((cat) => {
+          draft[cat] = {};
+          DURATIONS.forEach((d) => {
+            draft[cat][d] = data.matrix?.[cat]?.[d] ?? 0;
+          });
+        });
+        setPartnerPricingDraft(draft);
+      } else {
+        setPartnerPricingError(data.message || "Failed to fetch partner pricing");
+      }
+    } catch {
+      setPartnerPricingError("Unable to connect to server.");
+    } finally {
+      setPartnerPricingLoading(false);
+    }
+  }, []);
+
+  const handleSavePartnerPricing = async () => {
+    setPartnerPricingSaving(true);
+    setPartnerPricingError("");
+    setPartnerPricingSuccess("");
+    try {
+      const entries: { category: string; days: number; price: number }[] = [];
+      CATEGORIES.forEach((cat) => {
+        DURATIONS.forEach((d) => {
+          entries.push({ category: cat, days: d, price: partnerPricingDraft[cat]?.[d] ?? 0 });
+        });
+      });
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pricing/partner/bulk`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPartnerPricingSuccess("Partner pricing updated successfully!");
+        fetchPartnerPricing();
+        setTimeout(() => setPartnerPricingSuccess(""), 3000);
+      } else {
+        setPartnerPricingError(data.message || "Failed to save partner pricing");
+      }
+    } catch {
+      setPartnerPricingError("Unable to connect to server.");
+    } finally {
+      setPartnerPricingSaving(false);
+    }
+  };
+
+  const updatePartnerPriceDraft = (category: string, days: number, value: string) => {
+    const numVal = parseInt(value, 10) || 0;
+    setPartnerPricingDraft((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], [days]: numVal },
+    }));
+  };
+
   // Vehicle functions
   const loadVehicles = useCallback(async () => {
     setVehiclesLoading(true);
@@ -289,12 +367,14 @@ export default function AdminPage() {
         subtitle: vehicle.subtitle || '',
         type: vehicle.type,
         pricePerDay: vehicle.pricePerDay,
+        partnerPricePerDay: (vehicle as any).partnerPricePerDay || 0,
         image: vehicle.image,
         thumbnails: vehicle.thumbnails || [],
         description: vehicle.description || '',
         specs: vehicle.specs || emptyVehicleForm.specs,
         features: vehicle.features || [],
         deposit: vehicle.deposit,
+        partnerDeposit: (vehicle as any).partnerDeposit || 0,
         isActive: vehicle.isActive
       });
     } else {
@@ -525,12 +605,13 @@ export default function AdminPage() {
     if (isAuthenticated) {
       fetchBookings();
       fetchPricing();
+      fetchPartnerPricing();
       loadVehicles();
       loadVehicleBookings();
       loadAyurvedaTreatments();
       loadAyurvedaBookings();
     }
-  }, [isAuthenticated, fetchBookings, fetchPricing, loadVehicles, loadVehicleBookings, loadAyurvedaTreatments, loadAyurvedaBookings]);
+  }, [isAuthenticated, fetchBookings, fetchPricing, fetchPartnerPricing, loadVehicles, loadVehicleBookings, loadAyurvedaTreatments, loadAyurvedaBookings]);
 
   const filteredBookings = bookings.filter(
     (b) =>
@@ -1015,8 +1096,88 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* Partner Pricing Table */}
+            <div className="mt-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="px-3 py-1 text-xs font-medium text-blue-400 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  Partner Pricing
+                </span>
+              </div>
+              <h3 className="text-xl font-bold mb-4">Partner Room Pricing</h3>
+              <p className="text-gray-400 text-sm mb-6">Set accommodation prices for partner users by room category and duration</p>
+
+              {partnerPricingError && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
+                  {partnerPricingError}
+                </div>
+              )}
+
+              {partnerPricingSuccess && (
+                <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3 mb-6">
+                  {partnerPricingSuccess}
+                </div>
+              )}
+
+              {partnerPricingLoading ? (
+                <div className="text-center py-12 text-gray-400">Loading partner pricing...</div>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="text-left px-6 py-4 font-semibold text-gray-300">Room Category</th>
+                        {DURATIONS.map((d) => (
+                          <th key={d} className="text-left px-6 py-4 font-semibold text-gray-300">
+                            {d} Days (₹)
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {CATEGORIES.map((cat) => (
+                        <tr key={cat} className="border-b border-white/5 hover:bg-white/5 transition">
+                          <td className="px-6 py-4">
+                            <span className="capitalize px-3 py-1 rounded-full text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium">
+                              {cat}
+                            </span>
+                          </td>
+                          {DURATIONS.map((d) => (
+                            <td key={d} className="px-6 py-4">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={partnerPricingDraft[cat]?.[d] ?? ""}
+                                  onChange={(e) => updatePartnerPriceDraft(cat, d, e.target.value)}
+                                  className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono"
+                                />
+                              </div>
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+                    <button
+                      onClick={handleSavePartnerPricing}
+                      disabled={partnerPricingSaving}
+                      className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold hover:from-blue-500 hover:to-cyan-500 transition-all duration-200 shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                    >
+                      {partnerPricingSaving ? "Saving..." : "Save Partner Prices"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
+
+
+
 
         {/* Vehicles Tab */}
         {activeTab === "vehicles" && (
@@ -1082,7 +1243,9 @@ export default function AdminPage() {
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Name</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Type</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Price/Day</th>
+                      <th className="text-left px-4 py-3 font-semibold text-gray-300">Partner Price/Day</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Deposit</th>
+                      <th className="text-left px-4 py-3 font-semibold text-gray-300">Partner Deposit</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Status</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-300">Actions</th>
                     </tr>
@@ -1116,7 +1279,9 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 font-semibold text-pink-400">₹{vehicle.pricePerDay.toLocaleString()}</td>
+                          <td className="px-4 py-3 font-semibold text-blue-400">₹{((vehicle as any).partnerPricePerDay || 0).toLocaleString()}</td>
                           <td className="px-4 py-3 text-gray-300">₹{vehicle.deposit.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-blue-300">₹{((vehicle as any).partnerDeposit || 0).toLocaleString()}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-xs border ${vehicle.isActive ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
                               {vehicle.isActive ? "Active" : "Inactive"}
@@ -1630,6 +1795,30 @@ export default function AdminPage() {
                     value={vehicleForm.deposit}
                     onChange={(e) => setVehicleForm({ ...vehicleForm, deposit: parseInt(e.target.value) || 0 })}
                     className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Partner Pricing Fields */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Partner Price/Day (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={(vehicleForm as any).partnerPricePerDay || 0}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, partnerPricePerDay: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Partner Deposit (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={(vehicleForm as any).partnerDeposit || 0}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, partnerDeposit: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                   />
                 </div>
               </div>

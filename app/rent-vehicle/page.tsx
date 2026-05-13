@@ -137,7 +137,7 @@ export default function RentVehiclePage() {
                                         <div className="absolute bottom-4 left-4 z-10">
                                             <h4 className="text-xl font-bold text-white">{vehicle.name}</h4>
                                             <div className="flex items-baseline gap-1 mt-1">
-                                                <span className="text-magenta-accent font-bold text-lg">₹{vehicle.pricePerDay}</span>
+                                                <span className="text-magenta-accent font-bold text-lg">₹{user?.type === 'partner' || user?.userType === 'partner' || user?.role === 'partner' ? ((vehicle as any).partnerPricePerDay || vehicle.pricePerDay) : vehicle.pricePerDay}</span>
                                                 <span className="text-gray-400 text-xs">/day</span>
                                             </div>
                                         </div>
@@ -173,7 +173,7 @@ export default function RentVehiclePage() {
             {/* --- Vehicle Detail Modal --- */}
             <AnimatePresence>
                 {selectedVehicle && (
-                    <VehicleModal vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} userId={user?.id} />
+                    <VehicleModal vehicle={selectedVehicle} onClose={() => setSelectedVehicle(null)} user={user} />
                 )}
             </AnimatePresence>
         </main>
@@ -181,7 +181,17 @@ export default function RentVehiclePage() {
 }
 
 // Modal Component
-function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose: () => void; userId?: string }) {
+function VehicleModal({ vehicle, onClose, user }: { vehicle: Vehicle; onClose: () => void; user?: any }) {
+    // Get the correct price based on user type
+    const getPricePerDay = () => {
+        const isPartner = user?.type === 'partner' || user?.userType === 'partner' || user?.role === 'partner';
+        return isPartner ? ((vehicle as any).partnerPricePerDay || vehicle.pricePerDay) : vehicle.pricePerDay;
+    };
+
+    const getDeposit = () => {
+        const isPartner = user?.type === 'partner' || user?.userType === 'partner' || user?.role === 'partner';
+        return isPartner ? ((vehicle as any).partnerDeposit || vehicle.deposit) : vehicle.deposit;
+    };
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [customerName, setCustomerName] = useState('');
@@ -202,7 +212,8 @@ function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose:
     };
 
     const totalDays = calculateTotalDays();
-    const totalPrice = totalDays * vehicle.pricePerDay;
+    const pricePerDay = getPricePerDay();
+    const totalPrice = totalDays * pricePerDay;
 
     // Handle booking with payment
     const handleBooking = async () => {
@@ -258,7 +269,7 @@ function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose:
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpaySignature: response.razorpay_signature,
                             bookingData: {
-                                userId: userId,
+                                userId: user?.id,
                                 vehicleId: vehicle._id,
                                 customerName: customerName.trim(),
                                 customerEmail: customerEmail.trim(),
@@ -409,7 +420,7 @@ function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose:
                             <div className="flex justify-between items-center border-b border-white/10 pb-4">
                                 <h3 className="text-lg font-bold text-white">Pricing & Options</h3>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-magenta-accent">₹{vehicle.pricePerDay}</div>
+                                    <div className="text-2xl font-bold text-magenta-accent">₹{getPricePerDay()}</div>
                                     <div className="text-xs text-gray-400">per day</div>
                                 </div>
                             </div>
@@ -482,7 +493,7 @@ function VehicleModal({ vehicle, onClose, userId }: { vehicle: Vehicle; onClose:
 
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-400">Security deposit (refundable):</span>
-                                <span className="text-white font-bold">₹{vehicle.deposit.toLocaleString()}</span>
+                                <span className="text-white font-bold">₹{getDeposit().toLocaleString()}</span>
                             </div>
 
                             <div className="pt-4 border-t border-white/10 flex justify-between items-center">
